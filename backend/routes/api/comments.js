@@ -36,27 +36,27 @@ const Comment = mongoose.model("Comment");
 
 module.exports = router;
 
-router.get("/", async (req, res) => {
-  try {
-    const comments = await Comment.find();
-    res.json(comments);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch comments" });
-  }
+router.get("/", function(req, res, next) {
+  Comment.find()
+    .then(function(comments) {
+      res.json(comments);
+    })
+    .catch(next);
 });
 
-router.delete("/:commentId", async (req, res) => {
-  try {
-    const { commentId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(commentId)) {
-      return res.status(400).json({ error: "Invalid comment ID" });
-    }
-    const deletedComment = await Comment.findByIdAndDelete(commentId);
-    if (!deletedComment) {
-      return res.status(404).json({ error: "Comment not found" });
-    }
-    res.json({ message: "Comment deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to delete comment" });
+router.delete("/:commentId", function(req, res, next) {
+  var commentId = req.params.commentId;
+  
+  if (!mongoose.Types.ObjectId.isValid(commentId)) {
+    return res.status(400).json({ error: "Invalid comment ID" });
   }
+  
+  Comment.findByIdAndDelete(commentId)
+    .then(function(deletedComment) {
+      if (!deletedComment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      res.json({ message: "Comment deleted successfully" });
+    })
+    .catch(next);
 });
