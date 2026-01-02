@@ -59,14 +59,19 @@ router.delete("/:commentId", async (req, res) => {
       return res.status(404).json({ error: "Comment not found" });
     }
     
-    // Find the associated item and remove the comment reference
-    const item = await Item.findById(comment.item);
-    if (item) {
-      item.comments.remove(commentId);
-      await item.save();
-    } else if (comment.item) {
-      // Log warning if comment references a non-existent item
-      console.warn(`Comment ${commentId} references non-existent item ${comment.item}`);
+    // Atomically remove the comment reference from the item's comments array
+    // Using $pull operator ensures atomic update and reduces race condition window
+    if (comment.item) {
+      const result = await Item.findByIdAndUpdate(
+        comment.item,
+        { $pull: { comments: commentId } },
+        { new: false } // Return original document to check if item existed
+      );
+      
+      if (!result) {
+        // Log warning if comment references a non-existent item
+        console.warn(`Comment ${commentId} references non-existent item ${comment.item}`);
+      }
     }
     
     // Now delete the comment
@@ -74,6 +79,11 @@ router.delete("/:commentId", async (req, res) => {
     
     res.json({ message: "Comment deleted successfully" });
   } catch (err) {
+    // Handle specific error cases
+    if (err.name === 'VersionError') {
+      return res.status(409).json({ error: "Concurrent modification detected. Please retry." });
+    }
+    console.error("Error deleting comment:", err);
     res.status(500).json({ error: "Failed to delete comment" });
   }
 });
