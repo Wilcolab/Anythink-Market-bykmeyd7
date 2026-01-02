@@ -49,6 +49,9 @@ router.get("/", async (req, res) => {
 router.delete("/:commentId", async (req, res) => {
   try {
     const { commentId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+      return res.status(400).json({ error: "Invalid comment ID" });
+    }
     const deletedComment = await Comment.findByIdAndDelete(commentId);
     if (!deletedComment) {
       return res.status(404).json({ error: "Comment not found" });
