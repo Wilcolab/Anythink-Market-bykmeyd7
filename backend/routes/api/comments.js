@@ -47,19 +47,10 @@ router.get("/", function(req, res, next) {
 
 router.delete("/:commentId", function(req, res, next) {
   var commentId = req.params.commentId;
-
+  
   if (!mongoose.Types.ObjectId.isValid(commentId)) {
     return res.status(400).json({ error: "Invalid comment ID" });
   }
-
-  return Comment.findByIdAndDelete(commentId)
-    .then(function(deletedComment) {
-      if (!deletedComment) {
-        return res.status(404).json({ error: "Comment not found" });
-      }
-      return res.status(200).json({ message: "Comment deleted successfully" });
-    })
-    .catch(next);
   
   Comment.findByIdAndDelete(commentId)
     .then(function(deletedComment) {
