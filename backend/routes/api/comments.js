@@ -34,8 +34,6 @@ const router = require("express").Router();
 const mongoose = require("mongoose");
 const Comment = mongoose.model("Comment");
 
-module.exports = router;
-
 router.get("/", async (req, res) => {
   try {
     const comments = await Comment.find();
@@ -60,3 +58,5 @@ router.delete("/:commentId", async (req, res) => {
     res.status(500).json({ error: "Failed to delete comment" });
   }
 });
+
+module.exports = router;
