@@ -64,6 +64,9 @@ router.delete("/:commentId", async (req, res) => {
     if (item) {
       item.comments.remove(commentId);
       await item.save();
+    } else if (comment.item) {
+      // Log warning if comment references a non-existent item
+      console.warn(`Comment ${commentId} references non-existent item ${comment.item}`);
     }
     
     // Now delete the comment
