@@ -12,8 +12,9 @@
  * @memberof module:routes/api/comments
  * @param {express.Request} req - Express request object.
  * @param {express.Response} res - Express response object.
+ * @param {express.NextFunction} next - Express next middleware function.
  * @returns {Promise<void>} 200 - Returns an array of comment documents in JSON format.
- * @throws 500 - Returns an error message if fetching comments fails.
+ * @throws Passes errors to the error handling middleware.
  */
 
 /**
@@ -25,65 +26,40 @@
  * @memberof module:routes/api/comments
  * @param {express.Request} req - Express request object.
  * @param {express.Response} res - Express response object.
+ * @param {express.NextFunction} next - Express next middleware function.
  * @param {string} req.params.commentId - The MongoDB ObjectId of the comment to delete.
  * @returns {Promise<void>} 200 - Returns a success message when the comment is deleted.
+ * @throws 400 - Returns an error message if the comment ID is invalid.
  * @throws 404 - Returns an error message if the comment is not found.
- * @throws 500 - Returns an error message if deleting the comment fails.
+ * @throws Passes other errors to the error handling middleware.
  */
-const router = require("express").Router();
-const mongoose = require("mongoose");
-const Comment = mongoose.model("Comment");
-const Item = mongoose.model("Item");
+var router = require("express").Router();
+var mongoose = require("mongoose");
+var Comment = mongoose.model("Comment");
+
+router.get("/", function(req, res, next) {
+  Comment.find()
+    .then(function(comments) {
+      res.json(comments);
+    })
+    .catch(next);
+});
+
+router.delete("/:commentId", function(req, res, next) {
+  var commentId = req.params.commentId;
+  
+  if (!mongoose.Types.ObjectId.isValid(commentId)) {
+    return res.status(400).json({ error: "Invalid comment ID" });
+  }
+  
+  Comment.findByIdAndDelete(commentId)
+    .then(function(deletedComment) {
+      if (!deletedComment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      res.json({ message: "Comment deleted successfully" });
+    })
+    .catch(next);
+});
 
 module.exports = router;
-
-router.get("/", async (req, res) => {
-  try {
-    const comments = await Comment.find();
-    res.json(comments);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch comments" });
-  }
-});
-
-router.delete("/:commentId", async (req, res) => {
-  try {
-    const { commentId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(commentId)) {
-      return res.status(400).json({ error: "Invalid comment ID" });
-    }
-    
-    // Find the comment to get the associated item
-    const comment = await Comment.findById(commentId);
-    if (!comment) {
-      return res.status(404).json({ error: "Comment not found" });
-    }
-    
-    // Atomically remove the comment reference from the item's comments array
-    // Using $pull operator ensures atomic update and reduces race condition window
-    if (comment.item) {
-      const result = await Item.findByIdAndUpdate(
-        comment.item,
-        { $pull: { comments: commentId } },
-        { new: false }
-      );
-      
-      if (!result) {
-        // Item doesn't exist - log warning for data inconsistency
-        console.warn(`Comment ${commentId} references non-existent item ${comment.item}`);
-      }
-    }
-    
-    // Now delete the comment
-    await Comment.findByIdAndDelete(commentId);
-    
-    res.json({ message: "Comment deleted successfully" });
-  } catch (err) {
-    // Handle specific error cases
-    if (err instanceof mongoose.Error.VersionError) {
-      return res.status(409).json({ error: "Concurrent modification detected. Please retry." });
-    }
-    console.error("Error deleting comment:", err);
-    res.status(500).json({ error: "Failed to delete comment" });
-  }
-});
