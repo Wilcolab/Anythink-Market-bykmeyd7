@@ -33,6 +33,7 @@
 const router = require("express").Router();
 const mongoose = require("mongoose");
 const Comment = mongoose.model("Comment");
+const Item = mongoose.model("Item");
 
 module.exports = router;
 
@@ -51,10 +52,23 @@ router.delete("/:commentId", async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(commentId)) {
       return res.status(400).json({ error: "Invalid comment ID" });
     }
-    const deletedComment = await Comment.findByIdAndDelete(commentId);
-    if (!deletedComment) {
+    
+    // Find the comment to get the associated item
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
       return res.status(404).json({ error: "Comment not found" });
     }
+    
+    // Find the associated item and remove the comment reference
+    const item = await Item.findById(comment.item);
+    if (item) {
+      item.comments.remove(commentId);
+      await item.save();
+    }
+    
+    // Now delete the comment
+    await Comment.findByIdAndDelete(commentId);
+    
     res.json({ message: "Comment deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete comment" });
