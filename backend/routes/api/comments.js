@@ -12,8 +12,9 @@
  * @memberof module:routes/api/comments
  * @param {express.Request} req - Express request object.
  * @param {express.Response} res - Express response object.
+ * @param {express.NextFunction} next - Express next middleware function.
  * @returns {Promise<void>} 200 - Returns an array of comment documents in JSON format.
- * @throws 500 - Returns an error message if fetching comments fails.
+ * @throws Passes errors to the error handling middleware.
  */
 
 /**
@@ -25,14 +26,16 @@
  * @memberof module:routes/api/comments
  * @param {express.Request} req - Express request object.
  * @param {express.Response} res - Express response object.
+ * @param {express.NextFunction} next - Express next middleware function.
  * @param {string} req.params.commentId - The MongoDB ObjectId of the comment to delete.
  * @returns {Promise<void>} 200 - Returns a success message when the comment is deleted.
+ * @throws 400 - Returns an error message if the comment ID is invalid.
  * @throws 404 - Returns an error message if the comment is not found.
- * @throws 500 - Returns an error message if deleting the comment fails.
+ * @throws Passes other errors to the error handling middleware.
  */
-const router = require("express").Router();
-const mongoose = require("mongoose");
-const Comment = mongoose.model("Comment");
+var router = require("express").Router();
+var mongoose = require("mongoose");
+var Comment = mongoose.model("Comment");
 
 module.exports = router;
 
