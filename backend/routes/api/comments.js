@@ -45,7 +45,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-//add another endpoint for deleting a comment
 router.delete("/:commentId", async (req, res) => {
   try {
     const { commentId } = req.params;
