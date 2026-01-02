@@ -37,13 +37,12 @@ var router = require("express").Router();
 var mongoose = require("mongoose");
 var Comment = mongoose.model("Comment");
 
-router.get("/", async (req, res) => {
-  try {
-    const comments = await Comment.find();
-    res.json(comments);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch comments" });
-  }
+router.get("/", function(req, res, next) {
+  Comment.find()
+    .then(function(comments) {
+      res.json(comments);
+    })
+    .catch(next);
 });
 
 router.delete("/:commentId", function(req, res, next) {
@@ -52,6 +51,15 @@ router.delete("/:commentId", function(req, res, next) {
   if (!mongoose.Types.ObjectId.isValid(commentId)) {
     return res.status(400).json({ error: "Invalid comment ID" });
   }
+  
+  Comment.findByIdAndDelete(commentId)
+    .then(function(deletedComment) {
+      if (!deletedComment) {
+        return res.status(404).json({ error: "Comment not found" });
+      }
+      res.json({ message: "Comment deleted successfully" });
+    })
+    .catch(next);
 });
 
 module.exports = router;
