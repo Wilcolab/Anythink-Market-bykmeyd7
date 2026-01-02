@@ -65,11 +65,11 @@ router.delete("/:commentId", async (req, res) => {
       const result = await Item.findByIdAndUpdate(
         comment.item,
         { $pull: { comments: commentId } },
-        { new: false } // Return original document to check if item existed
+        { new: false }
       );
       
       if (!result) {
-        // Log warning if comment references a non-existent item
+        // Item doesn't exist - log warning for data inconsistency
         console.warn(`Comment ${commentId} references non-existent item ${comment.item}`);
       }
     }
@@ -80,7 +80,7 @@ router.delete("/:commentId", async (req, res) => {
     res.json({ message: "Comment deleted successfully" });
   } catch (err) {
     // Handle specific error cases
-    if (err.name === 'VersionError') {
+    if (err instanceof mongoose.Error.VersionError) {
       return res.status(409).json({ error: "Concurrent modification detected. Please retry." });
     }
     console.error("Error deleting comment:", err);
