@@ -33,33 +33,35 @@
  * @throws 404 - Returns an error message if the comment is not found.
  * @throws Passes other errors to the error handling middleware.
  */
-var router = require("express").Router();
-var mongoose = require("mongoose");
-var Comment = mongoose.model("Comment");
+const router = require("express").Router();
+const mongoose = require("mongoose");
+const Comment = mongoose.model("Comment");
 
-router.get("/", function(req, res, next) {
-  Comment.find()
-    .then(function(comments) {
-      res.json(comments);
-    })
-    .catch(next);
+router.get("/", async (req, res, next) => {
+  try {
+    const comments = await Comment.find();
+    res.json(comments);
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.delete("/:commentId", function(req, res, next) {
-  var commentId = req.params.commentId;
-  
-  if (!mongoose.Types.ObjectId.isValid(commentId)) {
-    return res.status(400).json({ error: "Invalid comment ID" });
+router.delete("/:commentId", async (req, res, next) => {
+  try {
+    const commentId = req.params.commentId;
+    
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+      return res.status(400).json({ error: "Invalid comment ID" });
+    }
+    
+    const deletedComment = await Comment.findByIdAndDelete(commentId);
+    if (!deletedComment) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+    res.json({ message: "Comment deleted successfully" });
+  } catch (err) {
+    next(err);
   }
-  
-  Comment.findByIdAndDelete(commentId)
-    .then(function(deletedComment) {
-      if (!deletedComment) {
-        return res.status(404).json({ error: "Comment not found" });
-      }
-      res.json({ message: "Comment deleted successfully" });
-    })
-    .catch(next);
 });
 
 module.exports = router;
